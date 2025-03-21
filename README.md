@@ -1,4 +1,4 @@
-# Revolt Selfbot POC
+# Revolt Selfbot
 
 A proof-of-concept (POC) selfbot for [Revolt](https://revolt.chat), demonstrating how to interact with the API using Python.
 
