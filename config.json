@@ -1,0 +1,9 @@
+{
+    "token": "YOUR_TOKEN_HERE",
+    "prefix": "!",
+    "commands": {
+        "help": "Show this help message",
+        "hello": "Get a greeting from the bot",
+        "userinfo": "Fetch user info"
+    }
+}
