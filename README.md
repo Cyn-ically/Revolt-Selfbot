@@ -1,6 +1,6 @@
 # Revolt Selfbot
 
-A proof-of-concept (POC) selfbot for [Revolt](https://revolt.chat), demonstrating how to interact with the API using Python.
+A proof-of-concept (POC) selfbot for [Revolt](https://revolt.chat) Revolt.chat, demonstrating how to interact with the API using Python.
 
 ## Features
 - Basic command handling with a configurable prefix
