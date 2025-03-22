@@ -1,13 +1,27 @@
 {
+
     "token": "YOUR_TOKEN_HERE",
     "prefix": "!",
+
+
+    "custom_status": true,
+    "custom_status_text": "Ramona-Flower",
+    "All tyoes of custom status":"Busy, Focus, Idle, Online, Invisible",
+
+    "custom_status_type": "Invisible",
+
     "commands": {
         "help": "Show this help message",
         "hello": "Get a greeting from the bot",
         "userinfo": "Fetch user info",
-        "username": "Change your username (usage: !username <new_name>)"
+        "username": "Change your username (usage: !username <new_name>)",
+        "reloadnames": "Reload usernames from config/usernames.txt",
+        "customstatus": "Set a custom status for the bot (usage: !customstatus <status_message>)"
+
     },
+
     "auto_switch_username": {
-        "enabled": false,
-        "delay": 30
+        "enabled": true,
+        "delay": 10
+    }
 }
