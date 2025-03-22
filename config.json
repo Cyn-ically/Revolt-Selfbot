@@ -4,6 +4,10 @@
     "commands": {
         "help": "Show this help message",
         "hello": "Get a greeting from the bot",
-        "userinfo": "Fetch user info"
-    }
+        "userinfo": "Fetch user info",
+        "username": "Change your username (usage: !username <new_name>)"
+    },
+    "auto_switch_username": {
+        "enabled": False,
+        "delay": 30
 }
