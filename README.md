@@ -1,5 +1,7 @@
 # Revolt Selfbot
 
+full recode without using idiotic revolt.py library
+
 A proof-of-concept (POC) selfbot for [Revolt](https://revolt.chat) Revolt.chat, demonstrating how to interact with the API using Python.
 
 ## Features
