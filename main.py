@@ -8,7 +8,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 import requests
 
-logging.basicConfig(level=logging.CRITICAL)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('revolt_bot')
 
 def load_config():
@@ -23,8 +23,12 @@ def load_config():
                 "commands": {
                     "help": "Show this help message",
                     "hello": "Get a greeting from the bot",
-                    "userinfo": "Fetch user info"
-
+                    "userinfo": "Fetch user info",
+                    "username": "Change your username (usage: !username <new_name>)"
+                },
+                "auto_switch_username": {
+                    "enabled": False,
+                    "delay": 30
                 }
             }
             with open('config.json', 'w') as f:
@@ -34,6 +38,88 @@ def load_config():
     except Exception as e:
         logger.error(f"Error loading config: {e}")
         return {"token": "", "prefix": "!", "commands": {}}
+
+
+def load_usernames():
+    os.makedirs('config', exist_ok=True)
+    
+    try:
+        if os.path.exists('./config/usernames.txt'):
+            with open('./config/usernames.txt', 'r') as f:
+                return [line.strip() for line in f.readlines() if line.strip()]
+        else:
+            default_names = ["Example1", "Example2", "Example3"]
+            with open('./config/usernames.txt', 'w') as f:
+                f.write('\n'.join(default_names))
+            logger.warning("Created default config/usernames.txt - please edit with your desired usernames")
+            return default_names
+    except Exception as e:
+        print(e)
+        logger.error(f"Error loading usernames: {e}")
+        return []
+
+async def change_username(client, new_name):
+    config = load_config()
+    
+    API_URL = "https://app.revolt.chat/api/users/@me"
+    HEADERS = {
+        "Content-Type": "application/json",
+        "x-session-token": config["token"],
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    }
+
+    try:
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(
+            ThreadPoolExecutor(), 
+            lambda: requests.patch(API_URL, json={"display_name": new_name}, headers=HEADERS)
+        )
+        print(response.status_cod)
+        if response.status_code == 200:
+            logger.info(f"Successfully changed username to: {new_name}")
+            return True, f"Successfully changed username to: {new_name}"
+        else:
+            logger.error(f"Failed to change username: {response.status_code}, {response.text}")
+            return False, f"Failed to change username: Status {response.status_code}"
+    except Exception as e:
+        logger.error(f"Exception during username change: {e}")
+        return False, f"Error changing username: {str(e)}"
+
+async def auto_username_changer(client):
+    config = load_config()
+    auto_switch = config.get("auto_switch_username", {})
+    
+    if not auto_switch.get("enabled", False):
+        logger.info("Auto username switching is disabled")
+        return
+    
+    names = load_usernames()
+    if not names:
+        logger.warning("Auto username switching is enabled but no names were found in config/usernames.txt")
+        return
+    
+    interval_seconds = auto_switch.get("delay", 30)
+    
+    logger.info(f"Starting auto username changer - rotating through names every {interval_seconds} seconds")
+    
+    name_index = 0
+    while True:
+        names = load_usernames()
+        if not names:
+            logger.warning("Username list is empty - pausing auto username changer")
+            await asyncio.sleep(interval_seconds)
+            continue
+            
+        new_name = names[name_index % len(names)]
+        success, message = await change_username(client, new_name)
+        
+        if success:
+            logger.info(f"Auto-switched username to: {new_name}")
+        else:
+            logger.error(f"Auto-switch failed: {message}")
+        
+        name_index = (name_index + 1) % len(names)
+        await asyncio.sleep(interval_seconds)
 
 async def send_revolt_message_with_session(channel_id, message_content, embed=None):
     config = load_config()
@@ -87,23 +173,25 @@ async def fetch_user_bio(user_id):
     else:
         logger.error(f"Failed to fetch user info: {response.status_code}\nResponse: {response.text}")
         return None
-
+    
+    
 class Client(revolt.Client):
     def __init__(self, session, token):
         super().__init__(session, token)
         self.config = load_config()
         self.prefix = self.config["prefix"]
         self.commands = self.config["commands"]
+        self.username_task = None
+
 
     async def on_ready(self):
         logger.info(f"Logged in as {self.user.name}, ID: {self.user.id}")
         logger.info(f"Using command prefix: {self.prefix}")
         
-        # SKID FONT ART BUT DONT HAVE SOMETHING BETTER
         
+        # SKID FONT ART BUT DONT HAVE SOMETHING BETTER
         print("""
               
-
 ██████╗░███████╗██╗░░░██╗░█████╗░██╗░░░░░████████╗
 ██╔══██╗██╔════╝██║░░░██║██╔══██╗██║░░░░░╚══██╔══╝
 ██████╔╝█████╗░░╚██╗░██╔╝██║░░██║██║░░░░░░░░██║░░░
@@ -119,6 +207,14 @@ class Client(revolt.Client):
 ╚═════╝░╚══════╝╚══════╝╚═╝░░░░░╚═════╝░░╚════╝░░░░╚═╝░░░
 """)
         print(f"Prefix used for commands: '{self.prefix}' for example '{self.prefix}help'\nLogged in as user: {self.user.name} ({self.user.id})")
+        
+        if self.config.get("auto_switch_username", {}).get("enabled", False):
+            
+            interval = self.config.get("auto_switch_username", {}).get("delay", 30)
+            print(f"Auto username changer is enabled - rotating through names every {interval} seconds")
+        else:
+            print("Auto username changer is disabled - enable it in config.json")
+        self.username_task = asyncio.create_task(auto_username_changer(self))
 
     async def on_message(self, message: revolt.Message):
         if message.author.id != self.user.id:
@@ -126,11 +222,12 @@ class Client(revolt.Client):
 
         content = message.content.strip()
         if content.startswith(self.prefix):
-            parts = content[len(self.prefix):].strip().split()
+            parts = content[len(self.prefix):].strip().split(maxsplit=1)
             command = parts[0]
+            args = parts[1] if len(parts) > 1 else ""
 
-            if command == "userinfo" and len(parts) > 1:
-                user_id = parts[1].strip('<@>')
+            if command == "userinfo" and args:
+                user_id = args.strip('<@>')
                 user_data = await fetch_user_bio(user_id)
                 background_id = user_data.get("background", {}).get("_id", None)
                 background_url = f"https://autumn.revolt.chat/backgrounds/{background_id}?width=1000" if background_id else None
@@ -147,11 +244,8 @@ class Client(revolt.Client):
                         "description": description,
                         "colour": "#3498db",
                         "image": None
-
                     }
                     
-
-
                     await send_revolt_message_with_session(message.channel.id, "", embed)
                 else:
                     await message.channel.send("Failed to fetch user info.")
@@ -176,6 +270,23 @@ class Client(revolt.Client):
 
             elif command == "hello":
                 await message.channel.send("Hello there! 👋")
+                
+
+            elif command == "username":
+                if not args:
+                    await message.channel.send(f"Please provide a new username. Usage: `{self.prefix}username <new_name>`")
+                    return
+                
+                success, response_msg = await change_username(self, args)
+                await message.channel.send(response_msg)
+                
+            elif command == "reloadnames":
+                names = load_usernames()
+                if names:
+                    await message.channel.send(f"Reloaded {len(names)} usernames from config/usernames.txt")
+                else:
+                    await message.channel.send("No usernames found in config/usernames.txt")
+                
             else:
                 await message.channel.send(f"Unknown command: {command}")
 
@@ -193,6 +304,12 @@ async def main():
             await client.start()
     except Exception as e:
         logger.error(f"An unexpected error occurred: {e}")
+    finally:
+
+        tasks = [t for t in asyncio.all_tasks() if t is not asyncio.current_task()]
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 if __name__ == "__main__":
     asyncio.run(main())
