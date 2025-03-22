@@ -8,6 +8,7 @@ A proof-of-concept (POC) selfbot for [Revolt](https://revolt.chat) Revolt.chat, 
 - Send messages and embeds
 - Configurable settings via `config.json`
 - Logging for debugging
+- Auto name changer (Change name by modifying usernames.txt)
 
 ## Requirements
 - Python 3.8+
@@ -49,6 +50,7 @@ python main.py
 | `!help`    | Displays available commands |
 | `!hello`   | Responds with a greeting |
 | `!userinfo <user_id>` | Fetches user info |
+| `!username <new_name>` | Change your username |
 
 ## Example
 Send the `!userinfo` command any chat:
