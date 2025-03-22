@@ -386,7 +386,10 @@ class RevoltClient:
             self.ws.close()
 
 async def main():
-    TOKEN = "2WvDRW6hKB1WRNXz9U8JBoVwxEE1Srg_zW7PTlJBE5Exmo__5Zb88I6u4Onsbd-f"
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+
+    TOKEN = config.get('TOKEN')
 
     client = RevoltClient(TOKEN)
 
