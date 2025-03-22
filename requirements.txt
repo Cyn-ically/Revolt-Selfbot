@@ -1,6 +1,6 @@
-revolt.py
 asyncio
 logging
 aiohttp
 uuid
 requests
+websocket
