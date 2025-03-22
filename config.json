@@ -8,6 +8,6 @@
         "username": "Change your username (usage: !username <new_name>)"
     },
     "auto_switch_username": {
-        "enabled": False,
+        "enabled": false,
         "delay": 30
 }
