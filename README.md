@@ -19,7 +19,7 @@ A proof-of-concept (POC) selfbot for [Revolt](https://revolt.chat) Revolt.chat, 
 ## Installation
 1. Clone the repository:
    ```sh
-   git clone https://github.com/Ramona-Flower/Revolt-Selfbot/Revolt-Selfbot.git
+   git clone https://github.com/cyn-ically/Revolt-Selfbot/Revolt-Selfbot.git
    cd Revolt-Selfbot
    ```
 2. Install dependencies:
